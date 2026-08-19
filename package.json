@@ -1,0 +1,24 @@
+{
+  "name": "contentx",
+  "version": "1.0.0",
+  "description": "Ultimate Instagram Page Automation",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyrilpoornaraj/contentX.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cyrilpoornaraj/contentX/issues"
+  },
+  "homepage": "https://github.com/cyrilpoornaraj/contentX#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}

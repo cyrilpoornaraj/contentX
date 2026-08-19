@@ -1,42 +1,63 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class ImageGenerator {
     constructor() {
-        this.templatePath = path.resolve('./template.html');
-        // Create an output folder for the images if it doesn't exist
-        this.outputDir = path.resolve('./output');
+        this.templatePath = path.join(__dirname, 'template.html');
+        this.outputDir = path.join(__dirname, 'output');
+
+        // Ensure directory exists, or clear it if it already does
         if (!fs.existsSync(this.outputDir)) {
             fs.mkdirSync(this.outputDir);
+        } else {
+            // Read all files in the directory and delete them
+            const files = fs.readdirSync(this.outputDir);
+            for (const file of files) {
+                // Only delete files (prevents errors if a hidden folder gets in there)
+                const filePath = path.join(this.outputDir, file);
+                if (fs.lstatSync(filePath).isFile()) {
+                    fs.unlinkSync(filePath);
+                }
+            }
+            console.log("🧹 Cleared old slides from the output folder.");
         }
     }
 
-    async createSlide(title, content, slideNumber, tag = "SYSTEM ARCHITECTURE") {
+    async createSlide(title, content, slideNumber, tag = "SYSTEM DESIGN", isLastSlide = false) {
         console.log(`[ImageGenerator] Rendering slide ${slideNumber}...`);
 
-        // 1. Read the raw HTML file
         let html = fs.readFileSync(this.templatePath, 'utf8');
 
-        // 2. Added styling for dynamic bolding/coloring (replaces **text** with highlighted span)
+        // Apply bold highlighting to the title
         const formattedTitle = title.replace(/\*\*(.*?)\*\*/g, '<span class="highlight">$1</span>');
 
-        // 3. Replace the placeholders with the actual dynamic content
-        html = html.replace('{{TITLE}}', formattedTitle);
-        html = html.replace('{{CONTENT}}', content);
-        html = html.replace('{{TAG}}', tag);
+        // Format content as bullet points if it's an array, otherwise wrap in paragraph
+        let formattedContent = '';
+        if (Array.isArray(content)) {
+            formattedContent = '<ul>' + content.map(item => `<li>${item.replace(/\*\*(.*?)\*\*/g, '<span class="highlight">$1</span>')}</li>`).join('') + '</ul>';
+        } else {
+            formattedContent = `<p>${content.replace(/\*\*(.*?)\*\*/g, '<span class="highlight">$1</span>')}</p>`;
+        }
 
-        // 4. Launch the headless browser
+        // Hide swipe indicator on the last slide
+        const swipeHtml = isLastSlide ? '' : '<div class="swipe-indicator">Swipe <span class="pill">➔</span></div>';
+
+        html = html.replace('{{TITLE}}', formattedTitle);
+        html = html.replace('{{CONTENT}}', formattedContent);
+        html = html.replace('{{TAG}}', tag);
+        html = html.replace('{{SWIPE_INDICATOR}}', swipeHtml);
+
         const browser = await puppeteer.launch();
         const page = await browser.newPage();
 
-        // 5. Set the viewport exactly to Instagram's square resolution
         await page.setViewport({ width: 1080, height: 1080 });
-
-        // 6. Load the injected HTML into the browser
         await page.setContent(html, { waitUntil: 'networkidle0' });
 
-        // 7. Take the screenshot and save it
         const outputPath = path.join(this.outputDir, `slide_${slideNumber}.png`);
         await page.screenshot({ path: outputPath });
 

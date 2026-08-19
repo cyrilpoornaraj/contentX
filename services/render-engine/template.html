@@ -24,7 +24,6 @@
             width: 1080px;
             height: 1080px;
             background-color: var(--bg-color);
-            /* Engineering blueprint grid background */
             background-image:
                 linear-gradient(var(--grid-color) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
@@ -75,23 +74,28 @@
             margin-bottom: 40px;
         }
 
-        p {
+        /* Updated to handle paragraphs OR bulleted lists */
+        #slide-content p {
             font-size: 42px;
             line-height: 1.5;
             margin: 0;
             color: var(--text-main);
         }
 
-        .code-snippet {
-            font-family: 'Fira Code', monospace;
-            background: #0d1117;
-            padding: 30px;
-            border-radius: 8px;
-            border: 1px solid var(--card-border);
-            font-size: 32px;
-            color: var(--accent-blue);
-            margin-top: 30px;
-            display: block;
+        #slide-content ul {
+            margin: 0;
+            padding-left: 40px;
+        }
+
+        #slide-content li {
+            font-size: 38px;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 20px;
+        }
+
+        #slide-content li::marker {
+            color: var(--accent-orange);
         }
 
         .footer {
@@ -137,13 +141,13 @@
 
     <h1 id="slide-title">{{TITLE}}</h1>
 
-    <div class="content-card">
-        <p id="slide-content">{{CONTENT}}</p>
+    <div class="content-card" id="slide-content">
+        {{CONTENT}}
     </div>
 
     <div class="footer">
-        <div class="branding">@your_coding_page</div>
-        <div class="swipe-indicator">Swipe <span class="pill">➔</span></div>
+        <div class="branding">@codewithcyril</div>
+        {{SWIPE_INDICATOR}}
     </div>
 </body>
 
