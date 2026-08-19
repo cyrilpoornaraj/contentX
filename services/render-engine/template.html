@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;700;900&display=swap');
+
+        :root {
+            --bg-color: #0a0c10;
+            --grid-color: rgba(255, 255, 255, 0.03);
+            --card-bg: #161b22;
+            --card-border: #30363d;
+            --text-main: #c9d1d9;
+            --text-muted: #8b949e;
+            --accent-orange: #f0883e;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 1080px;
+            height: 1080px;
+            background-color: var(--bg-color);
+            /* Engineering blueprint grid background */
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+            padding: 80px;
+        }
+
+        .header-tag {
+            font-family: 'Fira Code', monospace;
+            color: var(--accent-orange);
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            align-self: flex-start;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-size: 85px;
+            line-height: 1.1;
+            margin: 0 0 30px 0;
+            color: #ffffff;
+            align-self: flex-start;
+            text-align: left;
+        }
+
+        .highlight {
+            color: var(--accent-orange);
+        }
+
+        .content-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 50px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
+            margin-bottom: 40px;
+        }
+
+        p {
+            font-size: 42px;
+            line-height: 1.5;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .code-snippet {
+            font-family: 'Fira Code', monospace;
+            background: #0d1117;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            font-size: 32px;
+            color: var(--accent-blue);
+            margin-top: 30px;
+            display: block;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 60px;
+            width: 920px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--card-border);
+            padding-top: 30px;
+        }
+
+        .branding {
+            font-family: 'Fira Code', monospace;
+            font-size: 28px;
+            color: var(--text-muted);
+        }
+
+        .swipe-indicator {
+            font-weight: 700;
+            font-size: 28px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pill {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--accent-blue);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 20px;
+            font-family: 'Fira Code', monospace;
+            border: 1px solid rgba(88, 166, 255, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-tag" id="slide-tag">{{TAG}}</div>
+
+    <h1 id="slide-title">{{TITLE}}</h1>
+
+    <div class="content-card">
+        <p id="slide-content">{{CONTENT}}</p>
+    </div>
+
+    <div class="footer">
+        <div class="branding">@your_coding_page</div>
+        <div class="swipe-indicator">Swipe <span class="pill">➔</span></div>
+    </div>
+</body>
+
+</html>
