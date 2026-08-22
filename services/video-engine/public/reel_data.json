@@ -1,0 +1,128 @@
+{
+  "reel_title": "Toy Box Search Magic",
+  "scenes": [
+    {
+      "visual_type": "UNIVERSAL_GRAPH",
+      "spoken_script": "Let us look at our toy cubbies lined up in a row!",
+      "visual_data": {
+        "nodes": [
+          {
+            "id": "1",
+            "label": "Cubbie 0",
+            "x": 20,
+            "y": 50,
+            "shape": "box",
+            "color": "blue"
+          },
+          {
+            "id": "2",
+            "label": "Cubbie 1",
+            "x": 50,
+            "y": 50,
+            "shape": "box",
+            "color": "green"
+          },
+          {
+            "id": "3",
+            "label": "Cubbie 2",
+            "x": 80,
+            "y": 50,
+            "shape": "box",
+            "color": "red"
+          }
+        ],
+        "text_lines": [
+          "Array of Cubbies"
+        ]
+      }
+    },
+    {
+      "visual_type": "CODE_WALKTHROUGH",
+      "spoken_script": "The naive way is to check every single toy one by one until we find it.",
+      "visual_data": {
+        "annotations": [
+          {
+            "line_index": 0,
+            "label": "Checks every toy"
+          }
+        ],
+        "text_lines": [
+          "for i in range(n):",
+          "    if box[i] == target:",
+          "        return i"
+        ]
+      }
+    },
+    {
+      "visual_type": "CODE_WALKTHROUGH",
+      "spoken_script": "The optimal way uses binary search to jump straight to the middle!",
+      "visual_data": {
+        "annotations": [
+          {
+            "line_index": 1,
+            "label": "Cuts search in half"
+          }
+        ],
+        "text_lines": [
+          "mid = (low + high) // 2",
+          "if box[mid] == target: return mid"
+        ]
+      }
+    },
+    {
+      "visual_type": "UNIVERSAL_GRAPH",
+      "spoken_script": "Watch how the magical finger jumps right to the middle cubbie!",
+      "visual_data": {
+        "nodes": [
+          {
+            "id": "A",
+            "label": "Start",
+            "x": 20,
+            "y": 40,
+            "shape": "circle",
+            "color": "yellow"
+          },
+          {
+            "id": "B",
+            "label": "Middle",
+            "x": 50,
+            "y": 40,
+            "shape": "circle",
+            "color": "orange"
+          },
+          {
+            "id": "C",
+            "label": "End",
+            "x": 80,
+            "y": 40,
+            "shape": "circle",
+            "color": "purple"
+          }
+        ],
+        "text_lines": [
+          "Binary Search Flow"
+        ]
+      }
+    },
+    {
+      "visual_type": "TEXT_REVEAL",
+      "spoken_script": "Let us check the time speed for both methods.",
+      "visual_data": {
+        "text_lines": [
+          "Brute Force: O(N) Time",
+          "Optimal: O(log N) Time"
+        ]
+      }
+    },
+    {
+      "visual_type": "TEXT_REVEAL",
+      "spoken_script": "Want more toy data structures? Comment below!",
+      "visual_data": {
+        "text_lines": [
+          "Follow us & Comment 'DSA' for the full guide!"
+        ]
+      }
+    }
+  ],
+  "bgm_track": "bgm2.mp3"
+}

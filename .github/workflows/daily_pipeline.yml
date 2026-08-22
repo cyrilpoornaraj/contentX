@@ -1,0 +1,59 @@
+name: 365-Day DSA Content Engine
+
+on:
+  # This allows you to manually click a "Run" button in GitHub to test it
+  workflow_dispatch: 
+  
+  schedule:
+    # 10:00 AM IST (4:30 AM UTC) - For the Carousel
+    - cron: '30 4 * * *'
+    # 5:00 PM IST (11:30 AM UTC) - For the Reel
+    - cron: '30 11 * * *'
+
+permissions:
+  contents: write # Allows the bot to save progress back to your repo
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js (v22)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 📦 Install System Dependencies (For Puppeteer & Remotion)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser libnss3 libxss1 libasound2 libatk-bridge2.0-0 libgtk-3-0
+
+      - name: 🛠️ Install NPM Packages
+        run: |
+          npm install
+          cd services/video-engine && npm install
+          cd ../../
+
+      - name: 🚀 Run Orchestrator Pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node orchestrator.js
+
+      - name: 💾 Save Progress (The Memory System)
+        run: |
+          git config --global user.name 'GitHub Automation Bot'
+          git config --global user.email 'bot@github.com'
+          git add dsa_day.txt
+          git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
+          git push
+
+      - name: 📁 Upload Generated Media to GitHub (Temporary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-dsa-content
+          path: |
+            services/render-engine/output/*.png
+            services/video-engine/out/*.mp4
