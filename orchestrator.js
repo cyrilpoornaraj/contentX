@@ -101,7 +101,8 @@ async function runPipeline() {
         console.log(`\n✅ Pipeline Complete! Progress saved. Tomorrow will teach Day ${dayOfYear + 1}.`);
 
     } catch (error) {
-        console.error("\n❌ Pipeline Failed:", error.message);
+        console.error("\n❌ Pipeline Failed:", error);
+        process.exit(1);
     }
 }
 

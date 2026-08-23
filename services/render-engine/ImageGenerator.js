@@ -52,7 +52,9 @@ class ImageGenerator {
         html = html.replace('{{TAG}}', tag);
         html = html.replace('{{SWIPE_INDICATOR}}', swipeHtml);
 
-        const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
         const page = await browser.newPage();
 
         await page.setViewport({ width: 1080, height: 1080 });

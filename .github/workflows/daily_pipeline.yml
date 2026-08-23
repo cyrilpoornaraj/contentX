@@ -55,6 +55,5 @@ jobs:
         with:
           name: daily-dsa-content
           path: |
-            services/render-engine/output/**
-            services/video-engine/out/**
-          if-no-files-found: warn
+            services/render-engine/output
+            services/video-engine/out
