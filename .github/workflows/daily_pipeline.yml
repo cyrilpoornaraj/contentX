@@ -46,6 +46,7 @@ jobs:
       - name: 🚀 Run Orchestrator Pipeline
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: node orchestrator.js
 
       - name: 💾 Save Progress (The Memory System)
