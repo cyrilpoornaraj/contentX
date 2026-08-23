@@ -90,7 +90,7 @@ async function runPipeline() {
 
         // Execute the Remotion render command
         console.log("⏳ Compiling daily_reel.mp4 in the background...");
-        execSync('npx --package=@remotion/cli remotion render MyComp out/daily_reel.mp4 --props=public/reel_data.json', {
+        execSync('node node_modules/@remotion/cli/remotion-cli.js render MyComp out/daily_reel.mp4 --props=public/reel_data.json', {
             cwd: './services/video-engine',
             stdio: 'inherit'
         });
