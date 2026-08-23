@@ -31,11 +31,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y chromium-browser libnss3 libxss1 libasound2t64 libatk-bridge2.0-0 libgtk-3-0
 
-      - name: 🛠️ Install NPM Packages
+      - name: 🛠️ Install NPM Packages & Puppeteer Chrome
         run: |
           npm install
-          cd services/video-engine && npm install
-          cd ../../
+          if [ -d "services/render-engine" ]; then
+            cd services/render-engine && npm install && npx puppeteer browsers install chrome && cd ../..
+          else
+            npx puppeteer browsers install chrome
+          fi
+          if [ -d "services/video-engine" ]; then
+            cd services/video-engine && npm install && cd ../..
+          fi
 
       - name: 🚀 Run Orchestrator Pipeline
         env:
