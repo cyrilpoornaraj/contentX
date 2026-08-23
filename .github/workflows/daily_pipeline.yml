@@ -50,10 +50,10 @@ jobs:
           git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
           git push
 
-      - name: 📁 Upload Generated Media to GitHub (Temporary)
+      - name: 📁 Upload Generated Media to GitHub
         uses: actions/upload-artifact@v4
         with:
           name: daily-dsa-content
           path: |
-            services/render-engine/output/*.png
-            services/video-engine/out/*.mp4
+            services/render-engine/output/
+            services/video-engine/out/
