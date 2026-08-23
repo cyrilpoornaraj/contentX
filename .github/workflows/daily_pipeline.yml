@@ -33,6 +33,7 @@ jobs:
 
       - name: 🛠️ Install NPM Packages & Puppeteer Chrome
         run: |
+          npm install -g @remotion/cli
           npm install
           if [ -d "services/render-engine" ]; then
             cd services/render-engine && npm install && npx puppeteer browsers install chrome && cd ../..
