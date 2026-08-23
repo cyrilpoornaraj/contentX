@@ -29,7 +29,7 @@ jobs:
       - name: 📦 Install System Dependencies (For Puppeteer & Remotion)
         run: |
           sudo apt-get update
-          sudo apt-get install -y chromium-browser libnss3 libxss1 libasound2 libatk-bridge2.0-0 libgtk-3-0
+          sudo apt-get install -y chromium-browser libnss3 libxss1 libasound2t64 libatk-bridge2.0-0 libgtk-3-0
 
       - name: 🛠️ Install NPM Packages
         run: |
