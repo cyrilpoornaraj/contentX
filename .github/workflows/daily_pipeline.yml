@@ -33,7 +33,6 @@ jobs:
 
       - name: 🛠️ Install NPM Packages & Puppeteer Chrome
         run: |
-          npm install -g @remotion/cli
           npm install
           if [ -d "services/render-engine" ]; then
             cd services/render-engine && npm install && npx puppeteer browsers install chrome && cd ../..
@@ -41,7 +40,7 @@ jobs:
             npx puppeteer browsers install chrome
           fi
           if [ -d "services/video-engine" ]; then
-            cd services/video-engine && npm install && cd ../..
+            cd services/video-engine && npm install && npm install @remotion/cli @remotion/tailwind-v4 && cd ../..
           fi
 
       - name: 🚀 Run Orchestrator Pipeline
