@@ -89,9 +89,15 @@ async function runPipeline() {
         fs.writeFileSync(`${videoPublicDir}/reel_data.json`, JSON.stringify(result.reel_script, null, 2));
 
         // Execute the Remotion render command
-        console.log("⏳ Compiling daily_reel.mp4 in the background...");
-        execSync('npm run build-reel -- --props=public/reel_data.json', {
-            cwd: './services/video-engine',
+        console.log("📦 Forcing local Remotion installation...");
+        execSync("npm install @remotion/cli @remotion/tailwind-v4", {
+            cwd: 'services/video-engine',
+            stdio: 'inherit'
+        });
+
+        console.log("⏳ Compiling daily_reel.mp4...");
+        execSync("npm run build-reel -- --props=public/reel_data.json", {
+            cwd: 'services/video-engine',
             stdio: 'inherit'
         });
         console.log("✅ Video rendered successfully.");
