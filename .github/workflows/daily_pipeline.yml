@@ -1,9 +1,17 @@
 name: 365-Day DSA Content Engine
 
 on:
-  # This allows you to manually click a "Run" button in GitHub to test it
   workflow_dispatch: 
-  
+    inputs:
+      publish_target:
+        description: 'Test Publish (carousel, reel, or none)'
+        required: true
+        default: 'none'
+        type: choice
+        options:
+          - carousel
+          - reel
+          - none
   schedule:
     # 10:00 AM IST (4:30 AM UTC) - For the Carousel
     - cron: '30 4 * * *'
@@ -12,6 +20,7 @@ on:
 
 permissions:
   contents: write # Allows the bot to save progress back to your repo
+  pages: write    # ALLOWS THE BOT TO PUBLISH PUBLIC MEDIA URLS
 
 jobs:
   generate-content:
@@ -57,10 +66,42 @@ jobs:
           git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
           git push
 
-      - name: 📁 Upload Generated Media to GitHub
+      - name: 📁 Consolidate Media for GitHub Pages
+        run: |
+          mkdir -p deploy_media
+          cp -r services/render-engine/output/* deploy_media/ || true
+          cp -r services/video-engine/out/* deploy_media/ || true
+
+      - name: 🌐 Deploy Media to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./deploy_media
+          destination_dir: ./
+          force_orphan: true
+
+      - name: ⏳ Wait for CDN Propagation
+        run: sleep 15
+
+      - name: 📸 Publish to Instagram
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "${{ github.event.schedule }}" = "30 4 * * *" ]; then
+              node scripts/publish_instagram.mjs carousel
+            else
+              node scripts/publish_instagram.mjs reel
+            fi
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.publish_target }}" != "none" ]; then
+            node scripts/publish_instagram.mjs ${{ github.event.inputs.publish_target }}
+          else
+            echo "Manual run with no publish target selected. Skipping Instagram publish."
+          fi
+
+      - name: 📦 Upload Generated Media Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: daily-dsa-content
-          path: |
-            services/render-engine/output
-            services/video-engine/out
+          path: deploy_media/
