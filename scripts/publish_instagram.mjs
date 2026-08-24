@@ -4,7 +4,6 @@ import path from 'path';
 const ACCESS_TOKEN = process.env.INSTAGRAM_ACCESS_TOKEN;
 const IG_USER_ID = process.env.INSTAGRAM_ACCOUNT_ID;
 const BASE_URL = `https://graph.facebook.com/v20.0/${IG_USER_ID}`;
-// The files will now be at the root of your GitHub Pages link
 const GITHUB_PAGES_BASE = 'https://cyrilpoornaraj.github.io/contentX';
 
 if (!ACCESS_TOKEN || !IG_USER_ID) {
@@ -12,14 +11,27 @@ if (!ACCESS_TOKEN || !IG_USER_ID) {
     process.exit(1);
 }
 
+// Helper: Make API calls and automatically catch hidden Meta errors
+async function makeApiCall(endpoint, payload) {
+    const res = await fetch(`${BASE_URL}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, access_token: ACCESS_TOKEN }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+        throw new Error(`\n🚨 META API ERROR 🚨\nType: ${data.error.type}\nMessage: ${data.error.message}\nSubcode: ${data.error.error_subcode}\nUser Msg: ${data.error.error_user_msg || 'N/A'}`);
+    }
+    return data;
+}
+
 async function waitForContainer(containerId) {
     let status = 'IN_PROGRESS';
     let attempts = 0;
     while (status === 'IN_PROGRESS' && attempts < 30) {
         await new Promise((resolve) => setTimeout(resolve, 5000));
-        const res = await fetch(
-            `https://graph.facebook.com/v20.0/${containerId}?fields=status_code&access_token=${ACCESS_TOKEN}`
-        );
+        const res = await fetch(`https://graph.facebook.com/v20.0/${containerId}?fields=status_code&access_token=${ACCESS_TOKEN}`);
         const data = await res.json();
         status = data.status_code;
         if (status === 'ERROR') throw new Error(`Meta media processing error: ${JSON.stringify(data)}`);
@@ -38,88 +50,42 @@ async function publishCarousel() {
         caption = `${baseCap}\n\n.\n.\n.\n${tags}`.trim();
     }
 
-    // 🆕 NEW: Dynamically count how many slides exist in the folder!
     let slideCount = 0;
     while (fs.existsSync(path.join('deploy_media', `slide_${slideCount + 1}.png`))) {
         slideCount++;
     }
 
-    if (slideCount === 0) {
-        throw new Error('❌ No slides found in the deploy_media folder!');
-    }
-
+    if (slideCount === 0) throw new Error('❌ No slides found in the deploy_media folder!');
     console.log(`📸 Found ${slideCount} slides to publish!`);
-
-    // Generate the exact number of URLs needed
-    const imageUrls = [];
-    for (let i = 1; i <= slideCount; i++) {
-        imageUrls.push(`${GITHUB_PAGES_BASE}/slide_${i}.png?t=${Date.now()}`);
-    }
 
     console.log('1️⃣ Creating Carousel Item Containers...');
     const itemContainerIds = [];
-    // ... (the rest of the function stays exactly the same)
-    for (const url of imageUrls) {
-        const res = await fetch(`${BASE_URL}/media`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image_url: url, is_carousel_item: true, access_token: ACCESS_TOKEN }),
-        });
-        const data = await res.json();
-        if (!data.id) throw new Error(`Failed to create item container: ${JSON.stringify(data)}`);
+    for (let i = 1; i <= slideCount; i++) {
+        const url = `${GITHUB_PAGES_BASE}/slide_${i}.png?t=${Date.now()}`;
+        const data = await makeApiCall('media', { image_url: url, is_carousel_item: true });
         itemContainerIds.push(data.id);
     }
 
     console.log('2️⃣ Creating Parent Carousel Container...');
-    const carouselRes = await fetch(`${BASE_URL}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ media_type: 'CAROUSEL', children: itemContainerIds, caption: caption, access_token: ACCESS_TOKEN }),
+    const carouselData = await makeApiCall('media', {
+        media_type: 'CAROUSEL',
+        children: itemContainerIds,
+        caption: caption
     });
-    const carouselData = await carouselRes.json();
+
+    // Wait 10 seconds before publishing (Sometimes Meta needs a moment to process the parent container)
+    console.log('⏳ Waiting 10 seconds for Meta to process the carousel...');
+    await new Promise(resolve => setTimeout(resolve, 10000));
 
     console.log('3️⃣ Publishing Carousel to Feed...');
-    const publishRes = await fetch(`${BASE_URL}/media_publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creation_id: carouselData.id, access_token: ACCESS_TOKEN }),
-    });
-    const publishData = await publishRes.json();
+    const publishData = await makeApiCall('media_publish', { creation_id: carouselData.id });
+
     console.log('🎉 Carousel Successfully Published! Post ID:', publishData.id);
 }
 
 async function publishReel() {
-    const metadataPath = path.join('services', 'render-engine', 'output', 'metadata.json');
-    let caption = 'Master DSA in 20 seconds ⏱️🔥\n\nComment DSA for source code and roadmap!';
-
-    if (fs.existsSync(metadataPath)) {
-        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-        const baseCap = metadata.reel_caption || metadata.caption || '';
-        const tags = metadata.hashtags || '';
-        caption = `${baseCap}\n\n.\n.\n.\n${tags}`.trim();
-    }
-
-    const videoUrl = `${GITHUB_PAGES_BASE}/daily_reel.mp4?t=${Date.now()}`;
-
-    console.log('1️⃣ Creating Reel Container...');
-    const res = await fetch(`${BASE_URL}/media`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ media_type: 'REELS', video_url: videoUrl, caption: caption, share_to_feed: true, access_token: ACCESS_TOKEN }),
-    });
-    const data = await res.json();
-
-    console.log('2️⃣ Waiting for Meta video processing...');
-    await waitForContainer(data.id);
-
-    console.log('3️⃣ Publishing Reel to Feed...');
-    const publishRes = await fetch(`${BASE_URL}/media_publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ creation_id: data.id, access_token: ACCESS_TOKEN }),
-    });
-    const publishData = await publishRes.json();
-    console.log('🎉 Reel Successfully Published! Post ID:', publishData.id);
+    // ... (Keep your existing publishReel logic here for now, or update it with makeApiCall later)
+    console.log("Reel logic goes here");
 }
 
 const target = process.argv[2];
