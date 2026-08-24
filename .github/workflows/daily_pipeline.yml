@@ -64,6 +64,7 @@ jobs:
           git config --global user.email 'bot@github.com'
           git add dsa_day.txt
           git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
+          git pull origin dev --rebase
           git push
 
       - name: 📁 Consolidate Media for GitHub Pages
@@ -81,7 +82,7 @@ jobs:
           force_orphan: true
 
       - name: ⏳ Wait for CDN Propagation
-        run: sleep 15
+        run: sleep 90
 
       - name: 📸 Publish to Instagram
         env:
