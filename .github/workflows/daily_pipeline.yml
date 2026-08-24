@@ -52,13 +52,27 @@ jobs:
             cd services/video-engine && npm install && npm install @remotion/cli @remotion/tailwind-v4 && cd ../..
           fi
 
+      # --- 🆕 SMART CACHING SYSTEM ---
+      - name: 📅 Get Current Date
+        id: date
+        run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: 🧠 Check Media Cache
+        id: media-cache
+        uses: actions/cache@v4
+        with:
+          path: deploy_media/
+          key: dsa-media-${{ env.TODAY }}
+
       - name: 🚀 Run Orchestrator Pipeline
+        if: steps.media-cache.outputs.cache-hit != 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
         run: node orchestrator.js
 
       - name: 💾 Save Progress (The Memory System)
+        if: steps.media-cache.outputs.cache-hit != 'true'
         run: |
           git config --global user.name 'GitHub Automation Bot'
           git config --global user.email 'bot@github.com'
@@ -68,12 +82,14 @@ jobs:
           git push
 
       - name: 📁 Consolidate Media for GitHub Pages
+        if: steps.media-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p deploy_media
           cp -r services/render-engine/output/* deploy_media/ || true
           cp -r services/video-engine/out/* deploy_media/ || true
 
       - name: 🌐 Deploy Media to GitHub Pages
+        if: steps.media-cache.outputs.cache-hit != 'true'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -82,7 +98,9 @@ jobs:
           force_orphan: true
 
       - name: ⏳ Wait for CDN Propagation
+        if: steps.media-cache.outputs.cache-hit != 'true'
         run: sleep 90
+      # --- END CACHING SYSTEM ---
 
       - name: 📸 Publish to Instagram
         env:
