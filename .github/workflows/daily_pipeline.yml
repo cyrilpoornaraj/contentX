@@ -64,7 +64,7 @@ jobs:
           git config --global user.email 'bot@github.com'
           git add dsa_day.txt
           git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
-          git pull origin dev --rebase
+          git pull origin dev --rebase --autostash
           git push
 
       - name: 📁 Consolidate Media for GitHub Pages
