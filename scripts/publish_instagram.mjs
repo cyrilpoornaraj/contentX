@@ -84,8 +84,39 @@ async function publishCarousel() {
 }
 
 async function publishReel() {
-    // ... (Keep your existing publishReel logic here for now, or update it with makeApiCall later)
-    console.log("Reel logic goes here");
+    const metadataPath = path.join('deploy_media', 'metadata.json');
+    let caption = 'Master DSA in 20 seconds ⏱️🔥\n\nComment DSA for source code and roadmap!';
+
+    if (fs.existsSync(metadataPath)) {
+        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+        const baseCap = metadata.reel_caption || metadata.caption || '';
+        const tags = metadata.hashtags || '';
+        caption = `${baseCap}\n\n.\n.\n.\n${tags}`.trim();
+    }
+
+    // Ensure the video file actually exists locally
+    const videoLocalPath = path.join('deploy_media', 'daily_reel.mp4');
+    if (!fs.existsSync(videoLocalPath)) {
+        throw new Error('❌ No video found at deploy_media/daily_reel.mp4!');
+    }
+
+    const videoUrl = `${GITHUB_PAGES_BASE}/daily_reel.mp4?t=${Date.now()}`;
+
+    console.log('1️⃣ Creating Reel Container...');
+    const reelData = await makeApiCall('media', {
+        media_type: 'REELS',
+        video_url: videoUrl,
+        caption: caption,
+        share_to_feed: true
+    });
+
+    console.log('2️⃣ Waiting for Meta video processing (this usually takes 30-90 seconds)...');
+    await waitForContainer(reelData.id);
+
+    console.log('3️⃣ Publishing Reel to Feed...');
+    const publishData = await makeApiCall('media_publish', { creation_id: reelData.id });
+
+    console.log('🎉 Reel Successfully Published! Post ID:', publishData.id);
 }
 
 const target = process.argv[2];
