@@ -57,7 +57,7 @@ class ImageGenerator {
         });
         const page = await browser.newPage();
 
-        await page.setViewport({ width: 1080, height: 1080 });
+        await page.setViewport({ width: 1080, height: 1440 });
         await page.setContent(html, { waitUntil: 'networkidle0' });
 
         const outputPath = path.join(this.outputDir, `slide_${slideNumber}.png`);
