@@ -107,7 +107,7 @@ async function publishReel() {
         media_type: 'REELS',
         video_url: videoUrl,
         caption: caption,
-        share_to_feed: true
+        share_to_feed: false
     });
 
     console.log('2️⃣ Waiting for Meta video processing (this usually takes 30-90 seconds)...');
