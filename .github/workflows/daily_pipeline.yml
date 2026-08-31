@@ -72,14 +72,13 @@ jobs:
         run: node orchestrator.js
 
       - name: 💾 Save Progress (The Memory System)
-        if: steps.media-cache.outputs.cache-hit != 'true'
         run: |
           git config --global user.name 'GitHub Automation Bot'
           git config --global user.email 'bot@github.com'
           git add dsa_day.txt
           git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
-          git pull origin dev --rebase --autostash
-          git push
+          git pull origin main --rebase --autostash  # <-- CHANGE dev TO main
+          git push origin main                       # <-- BE EXPLICIT HERE TOO
 
       - name: 📁 Consolidate Media for GitHub Pages
         if: steps.media-cache.outputs.cache-hit != 'true'
