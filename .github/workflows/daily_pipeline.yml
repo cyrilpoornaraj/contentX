@@ -2,10 +2,10 @@ name: Automated Instagram Content Engine
 
 on:
   schedule:
-    # Runs every day at 8:00 AM UTC
-    - cron: '0 8 * * *'
-  workflow_dispatch: # Allows you to trigger it manually from GitHub anytime
-
+    # Runs 5 times a day at set UTC intervals (e.g., 04:00, 08:00, 12:00, 16:00, 20:00)
+    - cron: '0 4,8,12,16,20 * * *'
+  workflow_dispatch:
+    
 jobs:
   run-engine:
     runs-on: ubuntu-latest
