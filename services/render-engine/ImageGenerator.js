@@ -8,7 +8,9 @@ const __dirname = path.dirname(__filename);
 
 class ImageGenerator {
     constructor() {
-        this.templatePath = path.join(__dirname, 'template.html');
+        const rootTemplate = path.join(process.cwd(), 'templates', 'template.html');
+        const fallbackTemplate = path.resolve(__dirname, '../../templates/template.html');
+        this.templatePath = fs.existsSync(rootTemplate) ? rootTemplate : fallbackTemplate;
         this.outputDir = path.join(__dirname, 'output');
 
         // Ensure directory exists, or clear it if it already does

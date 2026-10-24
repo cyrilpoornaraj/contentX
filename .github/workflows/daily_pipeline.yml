@@ -1,125 +1,169 @@
-name: 365-Day DSA Content Engine
+name: Automated Instagram Content Engine
 
 on:
-  workflow_dispatch: 
-    inputs:
-      publish_target:
-        description: 'Test Publish (carousel, reel, or none)'
-        required: true
-        default: 'none'
-        type: choice
-        options:
-          - carousel
-          - reel
-          - none
   schedule:
-    # 10:07 AM IST (4:37 AM UTC) - For the Carousel
-    - cron: '37 4 * * *'
-    # 5:07 PM IST (11:37 AM UTC) - For the Reel
-    - cron: '37 11 * * *'
-
-permissions:
-  contents: write # Allows the bot to save progress back to your repo
-  pages: write    # ALLOWS THE BOT TO PUBLISH PUBLIC MEDIA URLS
+    # Runs every day at 8:00 AM UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch: # Allows you to trigger it manually from GitHub anytime
 
 jobs:
-  generate-content:
+  run-engine:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js (v22)
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
 
-      - name: 📦 Install System Dependencies (For Puppeteer & Remotion)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser libnss3 libxss1 libasound2t64 libatk-bridge2.0-0 libgtk-3-0
+      - name: Install Dependencies
+        run: npm install
 
-      - name: 🛠️ Install NPM Packages & Puppeteer Chrome
-        run: |
-          npm install
-          if [ -d "services/render-engine" ]; then
-            cd services/render-engine && npm install && npx puppeteer browsers install chrome && cd ../..
-          else
-            npx puppeteer browsers install chrome
-          fi
-          if [ -d "services/video-engine" ]; then
-            cd services/video-engine && npm install && npm install @remotion/cli @remotion/tailwind-v4 && cd ../..
-          fi
-
-      # --- 🆕 SMART CACHING SYSTEM ---
-      - name: 📅 Get Current Date
-        id: date
-        run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
-
-      - name: 🧠 Check Media Cache
-        id: media-cache
-        uses: actions/cache@v4
-        with:
-          path: deploy_media/
-          key: dsa-media-${{ env.TODAY }}
-
-      - name: 🚀 Run Orchestrator Pipeline
-        if: steps.media-cache.outputs.cache-hit != 'true'
+      - name: Run News Orchestrator (Generates JSON via Gemini)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
-        run: node orchestrator.js
+        run: node src/orchestrator.js
 
-      - name: 💾 Save Progress (The Memory System)
+      - name: Fetch Background Images
+        run: node src/fetch_images.js
+
+      - name: Render Carousels & Singles via Puppeteer
         run: |
-          git config --global user.name 'GitHub Automation Bot'
-          git config --global user.email 'bot@github.com'
-          git add dsa_day.txt
-          git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
-          git pull origin main --rebase --autostash  # <-- CHANGE dev TO main
-          git push origin main                       # <-- BE EXPLICIT HERE TOO
+          node src/render_carousels.js
+          node src/render_singles.js
 
-      - name: 📁 Consolidate Media for GitHub Pages
-        if: steps.media-cache.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p deploy_media
-          cp -r services/render-engine/output/* deploy_media/ || true
-          cp -r services/video-engine/out/* deploy_media/ || true
-
-      - name: 🌐 Deploy Media to GitHub Pages
-        if: steps.media-cache.outputs.cache-hit != 'true'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./deploy_media
-          destination_dir: ./
-          force_orphan: true
-
-      - name: ⏳ Wait for CDN Propagation
-        if: steps.media-cache.outputs.cache-hit != 'true'
-        run: sleep 90
-      # --- END CACHING SYSTEM ---
-
-      - name: 📸 Publish to Instagram
-        env:
-          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
-          INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
-        run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ "${{ github.event.schedule }}" = "37 4 * * *" ]; then
-              node scripts/publish_instagram.mjs carousel
-            else
-              node scripts/publish_instagram.mjs reel
-            fi
-          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.publish_target }}" != "none" ]; then
-            node scripts/publish_instagram.mjs ${{ github.event.inputs.publish_target }}
-          else
-            echo "Manual run with no publish target selected. Skipping Instagram publish."
-          fi
-
-      - name: 📦 Upload Generated Media Artifacts
+      - name: Upload Generated Posts as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: daily-dsa-content
-          path: deploy_media/
+          name: instagram-posts
+          path: output/
+ 
+
+# name: 365-Day DSA Content Engine
+
+# on:
+#   workflow_dispatch: 
+#     inputs:
+#       publish_target:
+#         description: 'Test Publish (carousel, reel, or none)'
+#         required: true
+#         default: 'none'
+#         type: choice
+#         options:
+#           - carousel
+#           - reel
+#           - none
+#   schedule:
+#     # 10:07 AM IST (4:37 AM UTC) - For the Carousel
+#     - cron: '37 4 * * *'
+#     # 5:07 PM IST (11:37 AM UTC) - For the Reel
+#     - cron: '37 11 * * *'
+
+# permissions:
+#   contents: write # Allows the bot to save progress back to your repo
+#   pages: write    # ALLOWS THE BOT TO PUBLISH PUBLIC MEDIA URLS
+
+# jobs:
+#   generate-content:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: 📥 Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: ⚙️ Setup Node.js (v22)
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '22'
+
+#       - name: 📦 Install System Dependencies (For Puppeteer & Remotion)
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y chromium-browser libnss3 libxss1 libasound2t64 libatk-bridge2.0-0 libgtk-3-0
+
+#       - name: 🛠️ Install NPM Packages & Puppeteer Chrome
+#         run: |
+#           npm install
+#           if [ -d "services/render-engine" ]; then
+#             cd services/render-engine && npm install && npx puppeteer browsers install chrome && cd ../..
+#           else
+#             npx puppeteer browsers install chrome
+#           fi
+#           if [ -d "services/video-engine" ]; then
+#             cd services/video-engine && npm install && npm install @remotion/cli @remotion/tailwind-v4 && cd ../..
+#           fi
+
+#       # --- 🆕 SMART CACHING SYSTEM ---
+#       - name: 📅 Get Current Date
+#         id: date
+#         run: echo "TODAY=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+#       - name: 🧠 Check Media Cache
+#         id: media-cache
+#         uses: actions/cache@v4
+#         with:
+#           path: deploy_media/
+#           key: dsa-media-${{ env.TODAY }}
+
+#       - name: 🚀 Run Orchestrator Pipeline
+#         if: steps.media-cache.outputs.cache-hit != 'true'
+#         env:
+#           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+#           PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+#         run: node src/orchestrator.js
+
+#       - name: 💾 Save Progress (The Memory System)
+#         run: |
+#           git config --global user.name 'GitHub Automation Bot'
+#           git config --global user.email 'bot@github.com'
+#           git add dsa_day.txt
+#           git commit -m "🤖 Auto-update: Completed Day progress" || echo "No changes to commit"
+#           git pull origin main --rebase --autostash  # <-- CHANGE dev TO main
+#           git push origin main                       # <-- BE EXPLICIT HERE TOO
+
+#       - name: 📁 Consolidate Media for GitHub Pages
+#         if: steps.media-cache.outputs.cache-hit != 'true'
+#         run: |
+#           mkdir -p deploy_media
+#           cp -r services/render-engine/output/* deploy_media/ || true
+#           cp -r services/video-engine/out/* deploy_media/ || true
+
+#       - name: 🌐 Deploy Media to GitHub Pages
+#         if: steps.media-cache.outputs.cache-hit != 'true'
+#         uses: peaceiris/actions-gh-pages@v4
+#         with:
+#           github_token: ${{ secrets.GITHUB_TOKEN }}
+#           publish_dir: ./deploy_media
+#           destination_dir: ./
+#           force_orphan: true
+
+#       - name: ⏳ Wait for CDN Propagation
+#         if: steps.media-cache.outputs.cache-hit != 'true'
+#         run: sleep 90
+#       # --- END CACHING SYSTEM ---
+
+#       - name: 📸 Publish to Instagram
+#         env:
+#           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+#           INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
+#         run: |
+#           if [ "${{ github.event_name }}" = "schedule" ]; then
+#             if [ "${{ github.event.schedule }}" = "37 4 * * *" ]; then
+#               node scripts/publish_instagram.mjs carousel
+#             else
+#               node scripts/publish_instagram.mjs reel
+#             fi
+#           elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.publish_target }}" != "none" ]; then
+#             node scripts/publish_instagram.mjs ${{ github.event.inputs.publish_target }}
+#           else
+#             echo "Manual run with no publish target selected. Skipping Instagram publish."
+#           fi
+
+#       - name: 📦 Upload Generated Media Artifacts
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: daily-dsa-content
+#           path: deploy_media/

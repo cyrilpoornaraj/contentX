@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700;900&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            width: 1080px; height: 1350px; 
+            background-color: #000; color: #fff;
+            font-family: 'Inter', sans-serif;
+            position: relative; overflow: hidden;
+        }
+
+        #bg-image {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center; z-index: 1;
+        }
+
+        /* Stronger gradient to ensure the sub-description is readable */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.98) 10%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0.1) 100%);
+            z-index: 2;
+        }
+
+        .content {
+            position: absolute; bottom: 120px; left: 0; width: 100%;
+            padding: 0 60px; text-align: center; z-index: 3;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .brand-tag {
+            font-size: 30px; font-weight: 700; background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px 25px; border-radius: 50px; border: 2px solid #00E5FF;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); margin-bottom: 30px;
+        }
+
+        .headline {
+            font-size: 95px; font-weight: 900; line-height: 1.1;
+            letter-spacing: -2px; text-shadow: 0 4px 25px rgba(0,0,0,0.9);
+            margin-bottom: 25px;
+        }
+
+        .description {
+            font-size: 42px; font-weight: 700; line-height: 1.3;
+            color: #E0E0E0; text-shadow: 0 4px 15px rgba(0,0,0,0.9);
+        }
+
+        .highlight { color: #00E5FF; }
+    </style>
+</head>
+<body>
+    <div id="bg-image"></div>
+    <div class="overlay"></div>
+    
+    <div class="content">
+        <div class="brand-tag">@CodeWithCyril</div>
+        <div class="headline" id="title"></div>
+        <div class="description" id="content-body"></div>
+    </div>
+</body>
+</html>

@@ -5,6 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "start": "node src/orchestrator.js",
+    "orchestrator": "node src/orchestrator.js",
+    "fetch-images": "node src/fetch_images.js",
+    "render-carousels": "node src/render_carousels.js",
+    "render-singles": "node src/render_singles.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,6 +24,9 @@
   },
   "homepage": "https://github.com/cyrilpoornaraj/contentX#readme",
   "dependencies": {
-    "dotenv": "^17.4.2"
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.4.2",
+    "puppeteer": "^25.13.0",
+    "rss-parser": "^3.13.0"
   }
 }
