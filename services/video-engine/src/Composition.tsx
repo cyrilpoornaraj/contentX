@@ -129,7 +129,7 @@ export const DynamicReel = ({ reel_title, bgm_track = 'bgm1.mp3', scenes = [] }:
 
       <div className="h-[15%] w-full flex items-start justify-center pt-10 z-50">
         <div className="text-[#8b949e] font-fira font-bold text-3xl opacity-80">
-          @codewithcyril
+          @techseithigal
         </div>
       </div>
 

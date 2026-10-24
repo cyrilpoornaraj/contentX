@@ -50,7 +50,7 @@ async function generateDailyNews() {
              // IF type is "single": Generate EXACTLY 1 slide. "headline" must be a short, massive bold hook. "body" must be a punchy 1-2 sentence description expanding on the hook.
              // IF type is "carousel": Generate 3 to 4 slides explaining the story in detail. Each slide needs a "headline" and a "body".
           ],
-          "caption": "Engaging Instagram caption summarizing the news with a call to action to follow @CodeWithCyril."
+          "caption": "Engaging Instagram caption summarizing the news with a call to action to follow @techseithigal."
         }
         Return ONLY raw JSON. Do not use markdown code blocks.
         `;
