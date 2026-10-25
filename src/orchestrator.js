@@ -4,8 +4,21 @@ import fs from 'fs';
 import path from 'path';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Switched to stable 1.5-flash
 const parser = new Parser();
+
+async function generateWithRetry(prompt, retries = 3, delayMs = 5000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const result = await model.generateContent(prompt);
+            return result.response.text();
+        } catch (error) {
+            console.log(`⚠️ Attempt ${i + 1} failed: ${error.message}. Retrying in ${delayMs/1000}s...`);
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+    }
+}
 
 async function generateSinglePost() {
     console.log("📡 Fetching latest tech stories from TechCrunch...");
@@ -17,13 +30,11 @@ async function generateSinglePost() {
 
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-    // Load history of already posted article links to avoid duplicates
     let postedLinks = [];
     if (fs.existsSync(historyPath)) {
         postedLinks = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
     }
 
-    // Find the first story that hasn't been posted yet
     const freshStory = feed.items.find(item => !postedLinks.includes(item.link));
 
     if (!freshStory) {
@@ -31,7 +42,6 @@ async function generateSinglePost() {
         return;
     }
 
-    // Randomly choose post type (carousel or single)
     const postType = Math.random() < 0.6 ? 'carousel' : 'single';
     console.log(`🧠 Generating ${postType} content for: ${freshStory.title}...`);
 
@@ -54,23 +64,21 @@ async function generateSinglePost() {
     `;
 
     try {
-        const result = await model.generateContent(prompt);
-        const responseText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        const responseText = await generateWithRetry(prompt);
+        const cleanText = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         
-        const postData = JSON.parse(responseText);
+        const postData = JSON.parse(cleanText);
         postData.source_link = freshStory.link;
         
-        // Overwrite or append to daily_news.json for the rendering engine to pick up
         fs.writeFileSync(jsonPath, JSON.stringify([postData], null, 2));
         
-        // Save to history so it never posts twice
         postedLinks.push(freshStory.link);
         fs.writeFileSync(historyPath, JSON.stringify(postedLinks, null, 2));
 
         console.log(`✅ Success! Post generated and saved for rendering.`);
 
     } catch (error) {
-        console.error(`❌ Generation failed: ${error.message}`);
+        console.error(`❌ Generation permanently failed: ${error.message}`);
         process.exit(1);
     }
 }
