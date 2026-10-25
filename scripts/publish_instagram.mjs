@@ -11,7 +11,6 @@ if (!ACCESS_TOKEN || !IG_USER_ID) {
     process.exit(1);
 }
 
-// Helper: Make API calls and automatically catch hidden Meta errors
 async function makeApiCall(endpoint, payload) {
     const res = await fetch(`${BASE_URL}/${endpoint}`, {
         method: 'POST',
@@ -21,105 +20,70 @@ async function makeApiCall(endpoint, payload) {
     const data = await res.json();
 
     if (data.error) {
-        throw new Error(`\n🚨 META API ERROR 🚨\nType: ${data.error.type}\nMessage: ${data.error.message}\nSubcode: ${data.error.error_subcode}\nUser Msg: ${data.error.error_user_msg || 'N/A'}`);
+        throw new Error(`\n🚨 META API ERROR 🚨\nType: ${data.error.type}\nMessage: ${data.error.message}\nSubcode: ${data.error.error_subcode}`);
     }
     return data;
 }
 
-async function waitForContainer(containerId) {
-    let status = 'IN_PROGRESS';
-    let attempts = 0;
-    while (status === 'IN_PROGRESS' && attempts < 30) {
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        const res = await fetch(`https://graph.facebook.com/v20.0/${containerId}?fields=status_code&access_token=${ACCESS_TOKEN}`);
-        const data = await res.json();
-        status = data.status_code;
-        if (status === 'ERROR') throw new Error(`Meta media processing error: ${JSON.stringify(data)}`);
-        attempts++;
-    }
-}
+async function publishToInstagram() {
+    const outputDir = path.join(process.cwd(), 'output');
+    const jsonPath = path.join(process.cwd(), 'services', 'render-engine', 'daily_news.json');
 
-async function publishCarousel() {
-    const metadataPath = path.join('deploy_media', 'metadata.json');
-    let caption = 'Day of DSA Mastery 🚀\n\nComment DSA to get the complete problem breakdown notes!';
-
-    if (fs.existsSync(metadataPath)) {
-        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-        const baseCap = metadata.carousel_caption || metadata.caption || '';
-        const tags = metadata.hashtags || '';
-        caption = `${baseCap}\n\n.\n.\n.\n${tags}`.trim();
+    if (!fs.existsSync(outputDir)) {
+        throw new Error('❌ Output directory does not exist!');
     }
 
-    let slideCount = 0;
-    while (fs.existsSync(path.join('deploy_media', `slide_${slideCount + 1}.png`))) {
-        slideCount++;
+    let caption = 'Latest tech drop from @techseithigal 🚀\n\nFollow for more daily tech & AI updates!';
+    if (fs.existsSync(jsonPath)) {
+        const posts = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        if (posts.length > 0 && posts[0].caption) {
+            caption = posts[0].caption;
+        }
     }
 
-    if (slideCount === 0) throw new Error('❌ No slides found in the deploy_media folder!');
-    console.log(`📸 Found ${slideCount} slides to publish!`);
+    // Check files in output folder
+    const files = fs.readdirSync(outputDir).filter(file => file.endsWith('.png'));
+    
+    if (files.length === 0) {
+        throw new Error('❌ No rendered images found in output folder!');
+    }
 
-    console.log('1️⃣ Creating Carousel Item Containers...');
+    // If there is only 1 image (Single post type)
+    if (files.length === 1) {
+        console.log('📸 Publishing Single Image Post...');
+        const imageUrl = `${GITHUB_PAGES_BASE}/output/${files[0]}?t=${Date.now()}`;
+        
+        const container = await makeApiCall('media', { image_url: imageUrl, caption: caption });
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        const publishData = await makeApiCall('media_publish', { creation_id: container.id });
+        console.log('🎉 Single Post Successfully Published! ID:', publishData.id);
+        return;
+    }
+
+    // Otherwise, publish as a Carousel
+    console.log(`📸 Found ${files.length} slides. Publishing Carousel...`);
     const itemContainerIds = [];
-    for (let i = 1; i <= slideCount; i++) {
-        const url = `${GITHUB_PAGES_BASE}/slide_${i}.png?t=${Date.now()}`;
-        const data = await makeApiCall('media', { image_url: url, is_carousel_item: true });
+    
+    for (let i = 0; i < files.length; i++) {
+        const imageUrl = `${GITHUB_PAGES_BASE}/output/${files[i]}?t=${Date.now()}`;
+        const data = await makeApiCall('media', { image_url: imageUrl, is_carousel_item: true });
         itemContainerIds.push(data.id);
     }
 
-    console.log('2️⃣ Creating Parent Carousel Container...');
     const carouselData = await makeApiCall('media', {
         media_type: 'CAROUSEL',
         children: itemContainerIds,
         caption: caption
     });
 
-    // Wait 10 seconds before publishing (Sometimes Meta needs a moment to process the parent container)
-    console.log('⏳ Waiting 10 seconds for Meta to process the carousel...');
+    console.log('⏳ Waiting 10 seconds for Meta to process carousel container...');
     await new Promise(resolve => setTimeout(resolve, 10000));
 
-    console.log('3️⃣ Publishing Carousel to Feed...');
     const publishData = await makeApiCall('media_publish', { creation_id: carouselData.id });
-
     console.log('🎉 Carousel Successfully Published! Post ID:', publishData.id);
 }
 
-async function publishReel() {
-    const metadataPath = path.join('deploy_media', 'metadata.json');
-    let caption = 'Master DSA in 20 seconds ⏱️🔥\n\nComment DSA for source code and roadmap!';
-
-    if (fs.existsSync(metadataPath)) {
-        const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
-        const baseCap = metadata.reel_caption || metadata.caption || '';
-        const tags = metadata.hashtags || '';
-        caption = `${baseCap}\n\n.\n.\n.\n${tags}`.trim();
-    }
-
-    // Ensure the video file actually exists locally
-    const videoLocalPath = path.join('deploy_media', 'daily_reel.mp4');
-    if (!fs.existsSync(videoLocalPath)) {
-        throw new Error('❌ No video found at deploy_media/daily_reel.mp4!');
-    }
-
-    const videoUrl = `${GITHUB_PAGES_BASE}/daily_reel.mp4?t=${Date.now()}`;
-
-    console.log('1️⃣ Creating Reel Container...');
-    const reelData = await makeApiCall('media', {
-        media_type: 'REELS',
-        video_url: videoUrl,
-        caption: caption,
-        share_to_feed: false
-    });
-
-    console.log('2️⃣ Waiting for Meta video processing (this usually takes 30-90 seconds)...');
-    await waitForContainer(reelData.id);
-
-    console.log('3️⃣ Publishing Reel to Feed...');
-    const publishData = await makeApiCall('media_publish', { creation_id: reelData.id });
-
-    console.log('🎉 Reel Successfully Published! Post ID:', publishData.id);
-}
-
-const target = process.argv[2];
-if (target === 'carousel') await publishCarousel();
-else if (target === 'reel') await publishReel();
-else console.error('Specify "carousel" or "reel" as argument.');
+publishToInstagram().catch(err => {
+    console.error(err);
+    process.exit(1);
+});
