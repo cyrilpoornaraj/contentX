@@ -26,29 +26,29 @@ async function makeApiCall(endpoint, payload) {
 }
 
 async function publishToInstagram() {
-    // Explicitly target the render-engine folder where Puppeteer outputs the slides
-    const targetDir = path.join(process.cwd(), 'services', 'render-engine');
+    // Target the root output/ folder where Puppeteer saves slides
+    const targetDir = path.join(process.cwd(), 'output');
 
     if (!fs.existsSync(targetDir)) {
         throw new Error(`❌ Directory does not exist: ${targetDir}`);
     }
 
-    const files = fs.readdirSync(targetDir).filter(file => file.startsWith('slide_') && file.endsWith('.png'));
+    const files = fs.readdirSync(targetDir).filter(file => file.endsWith('.png'));
     
     if (files.length === 0) {
-        throw new Error(`❌ No slide_*.png files found in ${targetDir}!`);
+        throw new Error(`❌ No .png files found in ${targetDir}!`);
     }
 
     // Sort slides numerically (slide_1, slide_2, slide_3...)
     files.sort((a, b) => {
-        const numA = parseInt(a.replace('slide_', ''));
-        const numB = parseInt(b.replace('slide_', ''));
+        const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+        const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
         return numA - numB;
     });
 
-    console.log(`📁 Found ${files.length} slides ready for publishing.`);
+    console.log(`📁 Found ${files.length} rendered images ready for publishing in output/.`);
 
-    const jsonPath = path.join(targetDir, 'daily_news.json');
+    const jsonPath = path.join(process.cwd(), 'services', 'render-engine', 'daily_news.json');
     let caption = 'Latest tech drop from @techseithigal 🚀\n\nFollow for more daily tech & AI updates!';
     if (fs.existsSync(jsonPath)) {
         try {
@@ -64,7 +64,7 @@ async function publishToInstagram() {
     // If there is only 1 slide
     if (files.length === 1) {
         console.log('📸 Publishing Single Image Post...');
-        const imageUrl = `${GITHUB_PAGES_BASE}/services/render-engine/${files[0]}?t=${Date.now()}`;
+        const imageUrl = `${GITHUB_PAGES_BASE}/output/${files[0]}?t=${Date.now()}`;
         
         const container = await makeApiCall('media', { image_url: imageUrl, caption: caption });
         await new Promise(resolve => setTimeout(resolve, 5000));
@@ -78,7 +78,7 @@ async function publishToInstagram() {
     const itemContainerIds = [];
 
     for (let i = 0; i < files.length; i++) {
-        const imageUrl = `${GITHUB_PAGES_BASE}/services/render-engine/${files[i]}?t=${Date.now()}`;
+        const imageUrl = `${GITHUB_PAGES_BASE}/output/${files[i]}?t=${Date.now()}`;
         console.log(`Uploading container item: ${imageUrl}`);
         const data = await makeApiCall('media', { image_url: imageUrl, is_carousel_item: true });
         itemContainerIds.push(data.id);
