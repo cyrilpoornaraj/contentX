@@ -26,32 +26,50 @@ async function makeApiCall(endpoint, payload) {
 }
 
 async function publishToInstagram() {
-    const outputDir = path.join(process.cwd(), 'output');
-    const jsonPath = path.join(process.cwd(), 'services', 'render-engine', 'daily_news.json');
+    // Check multiple potential output locations used by render engines
+    const possibleDirs = [
+        path.join(process.cwd(), 'output'),
+        path.join(process.cwd(), 'services', 'render-engine')
+    ];
 
-    if (!fs.existsSync(outputDir)) {
-        throw new Error('❌ Output directory does not exist!');
-    }
+    let targetDir = null;
+    let files = [];
 
-    let caption = 'Latest tech drop from @techseithigal 🚀\n\nFollow for more daily tech & AI updates!';
-    if (fs.existsSync(jsonPath)) {
-        const posts = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-        if (posts.length > 0 && posts[0].caption) {
-            caption = posts[0].caption;
+    for (const dir of possibleDirs) {
+        if (fs.existsSync(dir)) {
+            const pngs = fs.readdirSync(dir).filter(file => file.endsWith('.png'));
+            if (pngs.length > 0) {
+                targetDir = dir;
+                files = pngs;
+                break;
+            }
         }
     }
 
-    // Check files in output folder
-    const files = fs.readdirSync(outputDir).filter(file => file.endsWith('.png'));
-    
-    if (files.length === 0) {
-        throw new Error('❌ No rendered images found in output folder!');
+    if (!targetDir || files.length === 0) {
+        throw new Error('❌ No rendered images found in any output directory!');
     }
 
-    // If there is only 1 image (Single post type)
+    console.log(`📁 Found rendered images in: ${targetDir}`);
+
+    const jsonPath = path.join(process.cwd(), 'services', 'render-engine', 'daily_news.json');
+    let caption = 'Latest tech drop from @techseithigal 🚀\n\nFollow for more daily tech & AI updates!';
+    if (fs.existsSync(jsonPath)) {
+        try {
+            const posts = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+            if (posts.length > 0 && posts[0].caption) {
+                caption = posts[0].caption;
+            }
+        } catch (e) {
+            console.log('⚠️ Could not parse JSON caption, using default.');
+        }
+    }
+
+    // If there is only 1 image (Single post)
     if (files.length === 1) {
         console.log('📸 Publishing Single Image Post...');
-        const imageUrl = `${GITHUB_PAGES_BASE}/output/${files[0]}?t=${Date.now()}`;
+        const folderName = path.basename(targetDir);
+        const imageUrl = `${GITHUB_PAGES_BASE}/${folderName}/${files[0]}?t=${Date.now()}`;
         
         const container = await makeApiCall('media', { image_url: imageUrl, caption: caption });
         await new Promise(resolve => setTimeout(resolve, 5000));
@@ -62,10 +80,17 @@ async function publishToInstagram() {
 
     // Otherwise, publish as a Carousel
     console.log(`📸 Found ${files.length} slides. Publishing Carousel...`);
-    const itemContainerIds = [];
-    
-    for (let i = 0; i < files.length; i++) {
-        const imageUrl = `${GITHUB_PAGES_BASE}/output/${files[i]}?t=${Date.now()}`;
+    const itemContainerIds = images => {
+        // Sort files to ensure slide_1, slide_2, etc. are in order
+        return files.sort();
+    };
+
+    const sortedFiles = files.sort();
+    const folderName = path.basename(targetDir);
+
+    for (let i = 0; i < sortedFiles.length; i++) {
+        const imageUrl = `${GITHUB_PAGES_BASE}/${folderName}/${sortedFiles[i]}?t=${Date.now()}`;
+        console.log(`Uploading slide item: ${imageUrl}`);
         const data = await makeApiCall('media', { image_url: imageUrl, is_carousel_item: true });
         itemContainerIds.push(data.id);
     }
