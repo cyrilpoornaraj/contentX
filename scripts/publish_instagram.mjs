@@ -26,11 +26,9 @@ async function makeApiCall(endpoint, payload) {
 }
 
 async function publishToInstagram() {
-    // Check multiple possible output directories where render engines save images
     const possibleDirs = [
         path.join(process.cwd(), 'output'),
-        path.join(process.cwd(), 'services', 'render-engine'),
-        path.join(process.cwd(), 'services', 'content-engine')
+        path.join(process.cwd(), 'services', 'render-engine')
     ];
 
     let targetDir = null;
@@ -38,7 +36,7 @@ async function publishToInstagram() {
 
     for (const dir of possibleDirs) {
         if (fs.existsSync(dir)) {
-            const pngs = fs.readdirSync(dir).filter(file => file.endsWith('.png') || file.endsWith('.jpg'));
+            const pngs = fs.readdirSync(dir).filter(file => file.endsWith('.png'));
             if (pngs.length > 0) {
                 targetDir = dir;
                 files = pngs;
@@ -47,21 +45,9 @@ async function publishToInstagram() {
         }
     }
 
-    // If no directory was found with images, create default output directory and throw clear error
     if (!targetDir || files.length === 0) {
-        const defaultOut = path.join(process.cwd(), 'output');
-        if (!fs.existsSync(defaultOut)) {
-            fs.mkdirSync(defaultOut, { recursive: true });
-        }
-        throw new Error(`❌ No rendered .png/.jpg images found in any output directory! Checked: ${possibleDirs.join(', ')}`);
+        throw new Error(`❌ No rendered .png images found in output directories!`);
     }
-
-    // Sort images numerically
-    files.sort((a, b) => {
-        const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
-        const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
-        return numA - numB;
-    });
 
     const folderName = path.basename(targetDir);
     console.log(`📁 Found ${files.length} rendered images in folder: ${folderName}`);
@@ -79,9 +65,9 @@ async function publishToInstagram() {
         }
     }
 
-    // If there is only 1 image (Single post)
+    // If there is only 1 image (Single post, e.g., post_1_single.png)
     if (files.length === 1) {
-        console.log('📸 Publishing Single Image Post...');
+        console.log(`📸 Publishing Single Image Post: ${files[0]}`);
         const imageUrl = `${GITHUB_PAGES_BASE}/${folderName}/${files[0]}?t=${Date.now()}`;
         
         const container = await makeApiCall('media', { image_url: imageUrl, caption: caption });
@@ -91,7 +77,13 @@ async function publishToInstagram() {
         return;
     }
 
-    // Otherwise, publish as a Carousel
+    // Otherwise, publish as a Carousel (sorting slide files numerically)
+    files.sort((a, b) => {
+        const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
+        const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
+        return numA - numB;
+    });
+
     console.log(`📸 Publishing Carousel with ${files.length} items...`);
     const itemContainerIds = [];
 
