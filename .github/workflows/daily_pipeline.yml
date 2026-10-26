@@ -28,6 +28,9 @@ jobs:
         run: node src/orchestrator.js
 
       - name: Fetch Background Images
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
         run: node src/fetch_images.js
 
       - name: Render Carousels & Singles via Puppeteer
