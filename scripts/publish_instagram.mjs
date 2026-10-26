@@ -25,34 +25,37 @@ async function makeApiCall(endpoint, payload) {
     return data;
 }
 
-async function publishToInstagram() {
-    const possibleDirs = [
-        path.join(process.cwd(), 'output'),
-        path.join(process.cwd(), 'services', 'render-engine')
-    ];
-
-    let targetDir = null;
-    let files = [];
-
-    for (const dir of possibleDirs) {
-        if (fs.existsSync(dir)) {
-            const pngs = fs.readdirSync(dir).filter(file => file.endsWith('.png'));
-            if (pngs.length > 0) {
-                targetDir = dir;
-                files = pngs;
-                break;
-            }
+// Recursively find all generated .png images anywhere in the project directory
+function getAllPngs(dir, fileList = []) {
+    if (!fs.existsSync(dir)) return fileList;
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+        if (file === 'node_modules' || file === '.git') continue;
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat.isDirectory()) {
+            getAllPngs(filePath, fileList);
+        } else if (file.endsWith('.png')) {
+            fileList.push(filePath);
         }
     }
+    return fileList;
+}
 
-    if (!targetDir || files.length === 0) {
-        throw new Error(`❌ No rendered .png images found in output directories!`);
+async function publishToInstagram() {
+    const rootDir = process.cwd();
+    const pngPaths = getAllPngs(rootDir);
+
+    if (pngPaths.length === 0) {
+        throw new Error(`❌ No rendered .png images found anywhere in the repository!`);
     }
 
-    const folderName = path.basename(targetDir);
-    console.log(`📁 Found ${files.length} rendered images in folder: ${folderName}`);
+    // Sort paths numerically or alphabetically to keep order
+    pngPaths.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-    const jsonPath = path.join(process.cwd(), 'services', 'render-engine', 'daily_news.json');
+    console.log(`📁 Found ${pngPaths.length} rendered images across the project.`);
+
+    const jsonPath = path.join(rootDir, 'services', 'render-engine', 'daily_news.json');
     let caption = 'Latest tech drop from @techseithigal 🚀\n\nFollow for more daily tech & AI updates!';
     if (fs.existsSync(jsonPath)) {
         try {
@@ -65,10 +68,11 @@ async function publishToInstagram() {
         }
     }
 
-    // If there is only 1 image (Single post, e.g., post_1_single.png)
-    if (files.length === 1) {
-        console.log(`📸 Publishing Single Image Post: ${files[0]}`);
-        const imageUrl = `${GITHUB_PAGES_BASE}/${folderName}/${files[0]}?t=${Date.now()}`;
+    // If there is only 1 image (Single post)
+    if (pngPaths.length === 1) {
+        const relativePath = path.relative(rootDir, pngPaths[0]).replace(/\\/g, '/');
+        console.log(`📸 Publishing Single Image Post: ${relativePath}`);
+        const imageUrl = `${GITHUB_PAGES_BASE}/${relativePath}?t=${Date.now()}`;
         
         const container = await makeApiCall('media', { image_url: imageUrl, caption: caption });
         await new Promise(resolve => setTimeout(resolve, 5000));
@@ -77,18 +81,13 @@ async function publishToInstagram() {
         return;
     }
 
-    // Otherwise, publish as a Carousel (sorting slide files numerically)
-    files.sort((a, b) => {
-        const numA = parseInt(a.replace(/[^0-9]/g, '')) || 0;
-        const numB = parseInt(b.replace(/[^0-9]/g, '')) || 0;
-        return numA - numB;
-    });
-
-    console.log(`📸 Publishing Carousel with ${files.length} items...`);
+    // Otherwise, publish as a Carousel
+    console.log(`📸 Publishing Carousel with ${pngPaths.length} items...`);
     const itemContainerIds = [];
 
-    for (let i = 0; i < files.length; i++) {
-        const imageUrl = `${GITHUB_PAGES_BASE}/${folderName}/${files[i]}?t=${Date.now()}`;
+    for (let i = 0; i < pngPaths.length; i++) {
+        const relativePath = path.relative(rootDir, pngPaths[i]).replace(/\\/g, '/');
+        const imageUrl = `${GITHUB_PAGES_BASE}/${relativePath}?t=${Date.now()}`;
         console.log(`Uploading container item: ${imageUrl}`);
         const data = await makeApiCall('media', { image_url: imageUrl, is_carousel_item: true });
         itemContainerIds.push(data.id);
