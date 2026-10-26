@@ -32,16 +32,21 @@ async function publishToInstagram() {
         throw new Error(`❌ Output directory does not exist!`);
     }
 
-    const files = fs.readdirSync(outputDir).filter(file => file.endsWith('.png') || file.endsWith('.jpg'));
+    // Only grab valid rendered post files (slides or single posts), ignoring raw backgrounds (bg_*.jpg)
+    const files = fs.readdirSync(outputDir).filter(file => {
+        const isPngOrJpg = file.endsWith('.png') || file.endsWith('.jpg');
+        const isSlideOrPost = file.startsWith('slide_') || file.startsWith('post_');
+        return isPngOrJpg && isSlideOrPost;
+    });
 
     if (files.length === 0) {
-        throw new Error(`❌ No images found in output folder!`);
+        throw new Error(`❌ No valid rendered post images (slide_*.png or post_*.png) found in output folder!`);
     }
 
     // Sort files naturally (slide_1, slide_2, etc.)
     files.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-    console.log(`📁 Found ${files.length} images ready for publishing.`);
+    console.log(`📁 Found ${files.length} valid post images ready for publishing: ${files.join(', ')}`);
 
     const jsonPath = path.join(process.cwd(), 'services', 'render-engine', 'daily_news.json');
     let caption = 'Latest tech drop from @techseithigal 🚀\n\nFollow for more daily tech & AI updates!';
