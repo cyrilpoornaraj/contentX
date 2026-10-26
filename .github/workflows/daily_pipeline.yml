@@ -2,7 +2,6 @@ name: Automated Instagram Content Engine
 
 on:
   schedule:
-    # Runs 5 times a day at set UTC intervals (e.g., 04:00, 08:00, 12:00, 16:00, 20:00)
     - cron: '0 4,8,12,16,20 * * *'
   workflow_dispatch:
     
@@ -37,6 +36,11 @@ jobs:
         run: |
           node src/render_carousels.js
           node src/render_singles.js
+
+      - name: Consolidate Media into Output Folder
+        run: |
+          mkdir -p output
+          find services/render-engine -type f \( -name "*.png" -o -name "*.jpg" \) -exec cp {} output/ \; || true
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
